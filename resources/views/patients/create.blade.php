@@ -18,10 +18,24 @@
         </div>
     </div>
 
-    @if(isset($error))
+    <!-- Mostrar errores -->
+    @if($errors->any())
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
         <i class="fas fa-exclamation-triangle me-2"></i>
-        <strong>Error:</strong> {{ $error }}
+        <strong>Por favor corrige los siguientes errores:</strong>
+        <ul class="mb-0">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    @endif
+
+    @if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        {{ session('error') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
     @endif
@@ -197,7 +211,7 @@
                                             id="house_id" name="house_id" disabled required>
                                         <option value="">Primero seleccione una calle</option>
                                     </select>
-                                    @if($selectedHouse)
+                                    @if(isset($selectedHouse))
                                         <div class="form-text text-success">
                                             <i class="fas fa-check"></i> Casa pre-seleccionada: {{ $selectedHouse->house_number }}
                                         </div>
@@ -232,7 +246,7 @@
                                 <div class="mb-3">
                                     <label for="address" class="form-label">Dirección Completa *</label>
                                     <textarea class="form-control @error('address') is-invalid @enderror" 
-                                              id="address" name="address" rows="2" readonly required>{{ old('address') }}</textarea>
+                                              id="address" name="address" rows="2" readonly>{{ old('address') }}</textarea>
                                     @error('address')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -353,7 +367,7 @@
                                 <div class="mb-3">
                                     <label for="risk_factors" class="form-label">Factores de Riesgo</label>
                                     <select class="form-select @error('risk_factors') is-invalid @enderror" 
-                                            id="risk_factors" name="risk_factors" multiple>
+                                            id="risk_factors" name="risk_factors[]" multiple>
                                         <option value="TABAQUISMO" {{ in_array('TABAQUISMO', old('risk_factors', [])) ? 'selected' : '' }}>Tabaquismo</option>
                                         <option value="ALCOHOLISMO" {{ in_array('ALCOHOLISMO', old('risk_factors', [])) ? 'selected' : '' }}>Alcoholismo</option>
                                         <option value="OBESIDAD" {{ in_array('OBESIDAD', old('risk_factors', [])) ? 'selected' : '' }}>Obesidad</option>
@@ -522,198 +536,341 @@
     </div>
 </div>
 @endsection
-
 @push('scripts')
+<!-- Cargar jQuery primero -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script>
-$(document).ready(function() {
-    // Calcular edad automáticamente
-    $('#birth_date').change(function() {
-        const birthDate = new Date($(this).val());
-        const today = new Date();
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
-        
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-            age--;
-        }
-        
-        $('#age').val(age);
-        
-        // Actualizar clasificación automáticamente
-        updateClassification(age);
-    });
-
-    function updateClassification(age) {
-        const classificationSelect = $('#classification');
-        let suggestedClassification = '';
-        
-        if (age < 12) {
-            suggestedClassification = 'NIÑO';
-        } else if (age >= 12 && age < 18) {
-            suggestedClassification = 'ADOLESCENTE';
-        } else if (age >= 18 && age < 60) {
-            suggestedClassification = 'ADULTO';
-        } else {
-            suggestedClassification = 'ADULTO_MAYOR';
-        }
-        
-        // Solo sugerir si no hay valor seleccionado
-        if (!classificationSelect.val()) {
-            classificationSelect.val(suggestedClassification);
-        }
+// Esperar a que jQuery esté disponible
+function checkJQuery() {
+    if (window.jQuery) {
+        initializeScript();
+    } else {
+        setTimeout(checkJQuery, 100);
     }
+}
 
-    // Sistema de ubicaciones jerárquico
-    $('#state_id').change(function() {
-        const stateId = $(this).val();
-        resetDependentSelects(['municipality_id', 'health_center_id', 'community_id', 'street_id', 'house_id']);
-        
-        if (stateId) {
-            loadMunicipalities(stateId);
-        }
-    });
+function initializeScript() {
+    $(document).ready(function() {
+        console.log('jQuery cargado correctamente, inicializando script...');
 
-    $('#municipality_id').change(function() {
-        const municipalityId = $(this).val();
-        resetDependentSelects(['health_center_id', 'community_id', 'street_id', 'house_id']);
-        
-        if (municipalityId) {
-            loadHealthCenters(municipalityId);
-        }
-    });
-
-    $('#health_center_id').change(function() {
-        const healthCenterId = $(this).val();
-        resetDependentSelects(['community_id', 'street_id', 'house_id']);
-        
-        if (healthCenterId) {
-            loadCommunities(healthCenterId);
-        }
-    });
-
-    $('#community_id').change(function() {
-        const communityId = $(this).val();
-        resetDependentSelects(['street_id', 'house_id']);
-        
-        if (communityId) {
-            loadStreets(communityId);
-        }
-    });
-
-    $('#street_id').change(function() {
-        const streetId = $(this).val();
-        resetDependentSelects(['house_id']);
-        
-        if (streetId) {
-            loadHouses(streetId);
-        }
-    });
-
-    $('#house_id').change(function() {
-        const houseId = $(this).val();
-        if (houseId) {
-            updateAddress(houseId);
-        }
-    });
-
-    // Funciones para cargar datos
-    function loadMunicipalities(stateId) {
-        $.get(`/ajax/municipalities/${stateId}`, function(data) {
-            $('#municipality_id').html('<option value="">Seleccionar Municipio</option>');
-            data.forEach(municipality => {
-                $('#municipality_id').append(`<option value="${municipality.id}">${municipality.name}</option>`);
-            });
-            $('#municipality_id').prop('disabled', false);
-        });
-    }
-
-    function loadHealthCenters(municipalityId) {
-        $.get(`/ajax/health-centers/${municipalityId}`, function(data) {
-            $('#health_center_id').html('<option value="">Seleccionar Centro de Salud</option>');
-            data.forEach(center => {
-                $('#health_center_id').append(`<option value="${center.id}">${center.name} (${center.type})</option>`);
-            });
-            $('#health_center_id').prop('disabled', false);
-        });
-    }
-
-    function loadCommunities(healthCenterId) {
-        $.get(`/ajax/communities/${healthCenterId}`, function(data) {
-            $('#community_id').html('<option value="">Seleccionar Comunidad</option>');
-            data.forEach(community => {
-                $('#community_id').append(`<option value="${community.id}">${community.name}</option>`);
-            });
-            $('#community_id').prop('disabled', false);
-        });
-    }
-
-    function loadStreets(communityId) {
-        $.get(`/ajax/streets/${communityId}`, function(data) {
-            $('#street_id').html('<option value="">Seleccionar Calle</option>');
-            data.forEach(street => {
-                $('#street_id').append(`<option value="${street.id}">${street.name}</option>`);
-            });
-            $('#street_id').prop('disabled', false);
-        });
-    }
-
-    function loadHouses(streetId) {
-        $.get(`/ajax/houses/${streetId}`, function(data) {
-            $('#house_id').html('<option value="">Seleccionar Casa</option>');
-            data.forEach(house => {
-                $('#house_id').append(`<option value="${house.id}">Casa ${house.house_number}</option>`);
-            });
-            $('#house_id').prop('disabled', false);
+        // Calcular edad automáticamente
+        $('#birth_date').change(function() {
+            const birthDate = new Date($(this).val());
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
             
-            // Si hay una casa pre-seleccionada
-            @if(isset($selectedHouse))
-                $('#house_id').val({{ $selectedHouse->id }});
-                updateAddress({{ $selectedHouse->id }});
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            
+            $('#age').val(age);
+            updateClassification(age);
+        });
+
+        function updateClassification(age) {
+            const classificationSelect = $('#classification');
+            let suggestedClassification = '';
+            
+            if (age < 12) {
+                suggestedClassification = 'NIÑO';
+            } else if (age >= 12 && age < 18) {
+                suggestedClassification = 'ADOLESCENTE';
+            } else if (age >= 18 && age < 60) {
+                suggestedClassification = 'ADULTO';
+            } else {
+                suggestedClassification = 'ADULTO_MAYOR';
+            }
+            
+            if (!classificationSelect.val()) {
+                classificationSelect.val(suggestedClassification);
+            }
+        }
+
+        // Sistema de ubicaciones jerárquico
+        $('#state_id').change(function() {
+            const stateId = $(this).val();
+            console.log('Estado seleccionado:', stateId);
+            resetDependentSelects(['municipality_id', 'health_center_id', 'community_id', 'street_id', 'house_id']);
+            
+            if (stateId) {
+                loadMunicipalities(stateId);
+            } else {
+                $('#municipality_id').html('<option value="">Seleccionar Municipio</option>').prop('disabled', true);
+            }
+        });
+
+        $('#municipality_id').change(function() {
+            const municipalityId = $(this).val();
+            console.log('Municipio seleccionado:', municipalityId);
+            resetDependentSelects(['health_center_id', 'community_id', 'street_id', 'house_id']);
+            
+            if (municipalityId) {
+                loadHealthCenters(municipalityId);
+            } else {
+                $('#health_center_id').html('<option value="">Seleccionar Centro de Salud</option>').prop('disabled', true);
+            }
+        });
+
+        $('#health_center_id').change(function() {
+            const healthCenterId = $(this).val();
+            console.log('Centro de salud seleccionado:', healthCenterId);
+            resetDependentSelects(['community_id', 'street_id', 'house_id']);
+            
+            if (healthCenterId) {
+                loadCommunities(healthCenterId);
+            } else {
+                $('#community_id').html('<option value="">Seleccionar Comunidad</option>').prop('disabled', true);
+            }
+        });
+
+        $('#community_id').change(function() {
+            const communityId = $(this).val();
+            console.log('Comunidad seleccionada:', communityId);
+            resetDependentSelects(['street_id', 'house_id']);
+            
+            if (communityId) {
+                loadStreets(communityId);
+            } else {
+                $('#street_id').html('<option value="">Seleccionar Calle</option>').prop('disabled', true);
+            }
+        });
+
+        $('#street_id').change(function() {
+            const streetId = $(this).val();
+            console.log('Calle seleccionada:', streetId);
+            resetDependentSelects(['house_id']);
+            
+            if (streetId) {
+                loadHouses(streetId);
+            } else {
+                $('#house_id').html('<option value="">Seleccionar Casa</option>').prop('disabled', true);
+            }
+        });
+
+        $('#house_id').change(function() {
+            const houseId = $(this).val();
+            console.log('Casa seleccionada:', houseId);
+            if (houseId) {
+                updateAddress(houseId);
+            } else {
+                $('#address').val('');
+            }
+        });
+
+        // Funciones para cargar datos
+        function loadMunicipalities(stateId) {
+            console.log('Cargando municipios para estado:', stateId);
+            $.ajax({
+                url: `/ajax/municipalities/${stateId}`,
+                type: 'GET',
+                success: function(data) {
+                    console.log('Municipios cargados:', data);
+                    $('#municipality_id').html('<option value="">Seleccionar Municipio</option>');
+                    if (data.length > 0) {
+                        data.forEach(municipality => {
+                            $('#municipality_id').append(`<option value="${municipality.id}">${municipality.name}</option>`);
+                        });
+                        $('#municipality_id').prop('disabled', false);
+                    } else {
+                        $('#municipality_id').html('<option value="">No hay municipios</option>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error cargando municipios:', error);
+                    $('#municipality_id').html('<option value="">Error al cargar</option>');
+                }
+            });
+        }
+
+        function loadHealthCenters(municipalityId) {
+            console.log('Cargando centros de salud para municipio:', municipalityId);
+            $.ajax({
+                url: `/ajax/health-centers/${municipalityId}`,
+                type: 'GET',
+                success: function(data) {
+                    console.log('Centros de salud cargados:', data);
+                    $('#health_center_id').html('<option value="">Seleccionar Centro de Salud</option>');
+                    if (data.length > 0) {
+                        data.forEach(center => {
+                            $('#health_center_id').append(`<option value="${center.id}">${center.name} (${center.type})</option>`);
+                        });
+                        $('#health_center_id').prop('disabled', false);
+                    } else {
+                        $('#health_center_id').html('<option value="">No hay centros de salud</option>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error cargando centros de salud:', error);
+                    $('#health_center_id').html('<option value="">Error al cargar</option>');
+                }
+            });
+        }
+
+        function loadCommunities(healthCenterId) {
+            console.log('Cargando comunidades para centro de salud:', healthCenterId);
+            $.ajax({
+                url: `/ajax/communities/${healthCenterId}`,
+                type: 'GET',
+                success: function(data) {
+                    console.log('Comunidades cargadas:', data);
+                    $('#community_id').html('<option value="">Seleccionar Comunidad</option>');
+                    if (data.length > 0) {
+                        data.forEach(community => {
+                            $('#community_id').append(`<option value="${community.id}">${community.name}</option>`);
+                        });
+                        $('#community_id').prop('disabled', false);
+                    } else {
+                        $('#community_id').html('<option value="">No hay comunidades</option>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error cargando comunidades:', error);
+                    $('#community_id').html('<option value="">Error al cargar</option>');
+                }
+            });
+        }
+
+        function loadStreets(communityId) {
+            console.log('Cargando calles para comunidad:', communityId);
+            $.ajax({
+                url: `/ajax/streets/${communityId}`,
+                type: 'GET',
+                success: function(data) {
+                    console.log('Calles cargadas:', data);
+                    $('#street_id').html('<option value="">Seleccionar Calle</option>');
+                    if (data.length > 0) {
+                        data.forEach(street => {
+                            $('#street_id').append(`<option value="${street.id}">${street.name}</option>`);
+                        });
+                        $('#street_id').prop('disabled', false);
+                    } else {
+                        $('#street_id').html('<option value="">No hay calles</option>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error cargando calles:', error);
+                    $('#street_id').html('<option value="">Error al cargar</option>');
+                }
+            });
+        }
+
+        function loadHouses(streetId) {
+            console.log('Cargando casas para calle:', streetId);
+            $.ajax({
+                url: `/ajax/houses/${streetId}`,
+                type: 'GET',
+                success: function(data) {
+                    console.log('Casas cargadas:', data);
+                    $('#house_id').html('<option value="">Seleccionar Casa</option>');
+                    if (data.length > 0) {
+                        data.forEach(house => {
+                            $('#house_id').append(`<option value="${house.id}">Casa ${house.house_number}</option>`);
+                        });
+                        $('#house_id').prop('disabled', false);
+                        
+                        // Si hay una casa pre-seleccionada
+                        @if(isset($selectedHouse))
+                            $('#house_id').val({{ $selectedHouse->id }});
+                            updateAddress({{ $selectedHouse->id }});
+                        @endif
+                    } else {
+                        $('#house_id').html('<option value="">No hay casas</option>');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error cargando casas:', error);
+                    $('#house_id').html('<option value="">Error al cargar</option>');
+                }
+            });
+        }
+
+        function updateAddress(houseId) {
+            console.log('Actualizando dirección para casa:', houseId);
+            $.ajax({
+                url: `/ajax/house-details/${houseId}`,
+                type: 'GET',
+                success: function(data) {
+                    console.log('Detalles de casa:', data);
+                    if (data.error) {
+                        $('#address').val('Error al cargar la dirección');
+                        return;
+                    }
+                    const address = `${data.full_address}, ${data.community_name}, ${data.health_center_name}, ${data.municipality_name}, ${data.state_name}`;
+                    $('#address').val(address);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error cargando detalles de casa:', error);
+                    $('#address').val('Error al cargar la dirección');
+                }
+            });
+        }
+
+        function resetDependentSelects(selectIds) {
+            selectIds.forEach(selectId => {
+                $(`#${selectId}`).html('<option value="">Cargando...</option>').prop('disabled', true);
+            });
+        }
+
+        // Prevenir envío doble del formulario
+        $('#patientForm').submit(function() {
+            const submitBtn = $('#submitBtn');
+            submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+            
+            setTimeout(() => {
+                submitBtn.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar Paciente');
+            }, 10000);
+        });
+
+        // Cargar datos si hay valores antiguos
+        @if(old('state_id'))
+            console.log('Cargando datos antiguos...');
+            loadMunicipalities({{ old('state_id') }});
+            
+            @if(old('municipality_id'))
+            setTimeout(() => {
+                $('#municipality_id').val({{ old('municipality_id') }}).prop('disabled', false);
+                loadHealthCenters({{ old('municipality_id') }});
+            }, 1000);
             @endif
-        });
-    }
 
-    function updateAddress(houseId) {
-        $.get(`/ajax/house-details/${houseId}`, function(data) {
-            const address = `${data.full_address}, ${data.community_name}, ${data.municipality_name}, ${data.state_name}`;
-            $('#address').val(address);
-        });
-    }
+            @if(old('health_center_id'))
+            setTimeout(() => {
+                $('#health_center_id').val({{ old('health_center_id') }}).prop('disabled', false);
+                loadCommunities({{ old('health_center_id') }});
+            }, 1500);
+            @endif
 
-    function resetDependentSelects(selectIds) {
-        selectIds.forEach(selectId => {
-            $(`#${selectId}`).html('<option value="">Cargando...</option>').prop('disabled', true);
-        });
-    }
+            @if(old('community_id'))
+            setTimeout(() => {
+                $('#community_id').val({{ old('community_id') }}).prop('disabled', false);
+                loadStreets({{ old('community_id') }});
+            }, 2000);
+            @endif
 
-    // Prevenir envío doble del formulario
-    $('#patientForm').submit(function(e) {
-        const submitBtn = $('#submitBtn');
-        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
-        
-        // Re-enable after 10 seconds in case of error
-        setTimeout(() => {
-            submitBtn.prop('disabled', false).html('<i class="fas fa-save"></i> Guardar Paciente');
-        }, 10000);
+            @if(old('street_id'))
+            setTimeout(() => {
+                $('#street_id').val({{ old('street_id') }}).prop('disabled', false);
+                loadHouses({{ old('street_id') }});
+            }, 2500);
+            @endif
+
+            @if(old('house_id'))
+            setTimeout(() => {
+                $('#house_id').val({{ old('house_id') }}).prop('disabled', false);
+                updateAddress({{ old('house_id') }});
+            }, 3000);
+            @endif
+        @endif
+
+        // Inicializar tooltips
+        $('[data-bs-toggle="tooltip"]').tooltip();
+
+        console.log('Script de pacientes inicializado correctamente');
     });
+}
 
-    // Inicializar selects múltiples
-    $('#risk_factors').select2({
-        placeholder: 'Seleccione los factores de riesgo',
-        allowClear: true
-    });
-});
+// Iniciar la verificación de jQuery
+checkJQuery();
 </script>
-
-<style>
-.select2-container--default .select2-selection--multiple {
-    border: 1px solid #ced4da;
-    border-radius: 0.375rem;
-}
-.select2-container--default.select2-container--focus .select2-selection--multiple {
-    border-color: #86b7fe;
-    outline: 0;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-</style>
 @endpush

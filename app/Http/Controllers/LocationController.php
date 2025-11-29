@@ -40,29 +40,28 @@ class LocationController extends Controller
     }
 
     // ==================== ESTADOS ====================
- // ==================== ESTADOS ====================
-public function statesIndex()
-{
-    $states = State::withCount(['municipalities'])
-        ->with(['municipalities' => function($query) {
-            $query->withCount(['healthCenters', 'communities']);
-        }])
-        ->get()
-        ->map(function($state) {
-            // Calcular counts manualmente
-            $state->health_centers_count = 0;
-            $state->communities_count = 0;
-            
-            foreach ($state->municipalities as $municipality) {
-                $state->health_centers_count += $municipality->health_centers_count;
-                $state->communities_count += $municipality->communities_count;
-            }
-            
-            return $state;
-        });
+    public function statesIndex()
+    {
+        $states = State::withCount(['municipalities'])
+            ->with(['municipalities' => function($query) {
+                $query->withCount(['healthCenters', 'communities']);
+            }])
+            ->get()
+            ->map(function($state) {
+                // Calcular counts manualmente
+                $state->health_centers_count = 0;
+                $state->communities_count = 0;
+                
+                foreach ($state->municipalities as $municipality) {
+                    $state->health_centers_count += $municipality->health_centers_count;
+                    $state->communities_count += $municipality->communities_count;
+                }
+                
+                return $state;
+            });
 
-    return view('locations.states.index', compact('states'));
-}
+        return view('locations.states.index', compact('states'));
+    }
 
     public function statesCreate()
     {
@@ -219,23 +218,21 @@ public function statesIndex()
         return view('locations.health-centers.create', compact('municipalities', 'types'));
     }
 
-  public function healthCentersStore(Request $request)
-{
-    $validated = $request->validate([
-        'municipality_id' => 'required|exists:municipalities,id',
-        'name' => 'required|max:200',
-        'type' => 'required|in:CDI,CPT_I,CPT_II,CPT_III,CPT_IV,AMBULATORIO_I,AMBULATORIO_II,AMBULATORIO_III,AMBULATORIO_IV',
-        'address' => 'required|max:500',
-        'phone' => 'nullable|max:20',
-        // 'latitude' => 'nullable|numeric|between:-90,90', // Comenta temporalmente
-        // 'longitude' => 'nullable|numeric|between:-180,180', // Comenta temporalmente
-    ]);
+    public function healthCentersStore(Request $request)
+    {
+        $validated = $request->validate([
+            'municipality_id' => 'required|exists:municipalities,id',
+            'name' => 'required|max:200',
+            'type' => 'required|in:CDI,CPT_I,CPT_II,CPT_III,CPT_IV,AMBULATORIO_I,AMBULATORIO_II,AMBULATORIO_III,AMBULATORIO_IV',
+            'address' => 'required|max:500',
+            'phone' => 'nullable|max:20',
+        ]);
 
-    HealthCenter::create($validated);
+        HealthCenter::create($validated);
 
-    return redirect()->route('locations.health-centers.index')
-        ->with('success', 'Centro de salud creado exitosamente.');
-}
+        return redirect()->route('locations.health-centers.index')
+            ->with('success', 'Centro de salud creado exitosamente.');
+    }
 
     public function healthCentersShow(HealthCenter $healthCenter)
     {
@@ -318,22 +315,30 @@ public function statesIndex()
         return view('locations.communities.create', compact('health_centers'));
     }
 
-   public function communitiesStore(Request $request)
-{
-    $validated = $request->validate([
-        'health_center_id' => 'required|exists:health_centers,id', // Asegúrate de que esta línea esté presente
-        'name' => 'required|max:100',
-        'sector' => 'nullable|max:100',
-        'description' => 'nullable|max:500',
-        'latitude' => 'nullable|numeric|between:-90,90',
-        'longitude' => 'nullable|numeric|between:-180,180',
-    ]);
+    public function communitiesStore(Request $request)
+    {
+        $validated = $request->validate([
+            'health_center_id' => 'required|exists:health_centers,id',
+            'name' => 'required|max:100',
+            'sector' => 'nullable|max:100',
+            'description' => 'nullable|max:500',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+        ]);
 
-    Community::create($validated);
+        // Crear manualmente para asegurar los datos
+        $community = new Community();
+        $community->health_center_id = $validated['health_center_id'];
+        $community->name = $validated['name'];
+        $community->sector = $validated['sector'] ?? null;
+        $community->description = $validated['description'] ?? null;
+        $community->latitude = $validated['latitude'] ?? null;
+        $community->longitude = $validated['longitude'] ?? null;
+        $community->save();
 
-    return redirect()->route('locations.communities.index')
-        ->with('success', 'Comunidad creada exitosamente.');
-}
+        return redirect()->route('locations.communities.index')
+            ->with('success', 'Comunidad creada exitosamente.');
+    }
 
     public function communitiesShow(Community $community)
     {
@@ -356,22 +361,22 @@ public function statesIndex()
         return view('locations.communities.edit', compact('community', 'health_centers'));
     }
 
-   public function communitiesUpdate(Request $request, Community $community)
-{
-    $validated = $request->validate([
-        'health_center_id' => 'required|exists:health_centers,id',
-        'name' => 'required|max:100|unique:communities,name,' . $community->id,
-        'sector' => 'nullable|max:100',
-        'description' => 'nullable|max:500',
-        'latitude' => 'nullable|numeric|between:-90,90',
-        'longitude' => 'nullable|numeric|between:-180,180',
-    ]);
+    public function communitiesUpdate(Request $request, Community $community)
+    {
+        $validated = $request->validate([
+            'health_center_id' => 'required|exists:health_centers,id',
+            'name' => 'required|max:100|unique:communities,name,' . $community->id,
+            'sector' => 'nullable|max:100',
+            'description' => 'nullable|max:500',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+        ]);
 
-    $community->update($validated);
+        $community->update($validated);
 
-    return redirect()->route('locations.communities.index')
-        ->with('success', 'Comunidad actualizada exitosamente.');
-}
+        return redirect()->route('locations.communities.index')
+            ->with('success', 'Comunidad actualizada exitosamente.');
+    }
 
     public function communitiesDestroy(Community $community)
     {
@@ -401,10 +406,11 @@ public function statesIndex()
         return view('locations.streets.index', compact('streets', 'communities'));
     }
 
-    public function streetsCreate()
+    public function streetsCreate(Community $community = null)
     {
         $communities = Community::with('healthCenter.municipality.state')->get();
-        return view('locations.streets.create', compact('communities'));
+        
+        return view('locations.streets.create', compact('communities', 'community'));
     }
 
     public function streetsStore(Request $request)
@@ -500,10 +506,10 @@ public function statesIndex()
         return view('locations.houses.index', compact('houses', 'streets', 'communities'));
     }
 
-    public function housesCreate()
+    public function housesCreate(Street $street = null)
     {
         $streets = Street::with('community.healthCenter.municipality.state')->get();
-        return view('locations.houses.create', compact('streets'));
+        return view('locations.houses.create', compact('streets', 'street'));
     }
 
     public function housesStore(Request $request)
@@ -601,9 +607,11 @@ public function statesIndex()
 
             if (!$existingHouse) {
                 try {
+                    // 🔥 CORRECCIÓN: Solo guardar campos que existen en la tabla
                     $street->houses()->create([
                         'house_number' => $houseNumber,
                         'description' => 'Casa generada automáticamente'
+                        // No incluir 'total_residents' ya que no existe en la tabla
                     ]);
                     $created++;
                 } catch (\Exception $e) {
@@ -618,49 +626,48 @@ public function statesIndex()
 
     // ==================== MÉTODOS AJAX ====================
     public function getMunicipalitiesByState($stateId)
-    {
-        $municipalities = Municipality::where('state_id', $stateId)->get();
-        return response()->json($municipalities);
+{
+    $municipalities = Municipality::where('state_id', $stateId)->get();
+    return response()->json($municipalities);
+}
+
+   public function getHealthCentersByMunicipality($municipalityId)
+{
+    $healthCenters = HealthCenter::where('municipality_id', $municipalityId)->get();
+    return response()->json($healthCenters);
+}
+public function getCommunitiesByHealthCenter($healthCenterId)
+{
+    $communities = Community::where('health_center_id', $healthCenterId)->get();
+    return response()->json($communities);
+}
+
+public function getStreetsByCommunity($communityId)
+{
+    $streets = Street::where('community_id', $communityId)->get();
+    return response()->json($streets);
+}
+
+public function getHousesByStreet($streetId)
+{
+    $houses = House::where('street_id', $streetId)->get();
+    return response()->json($houses);
+}
+
+   public function getHouseDetails($houseId)
+{
+    $house = House::with(['street.community.healthCenter.municipality.state'])->find($houseId);
+    
+    if ($house) {
+        return response()->json([
+            'full_address' => $house->full_address,
+            'community_name' => $house->street->community->name,
+            'health_center_name' => $house->street->community->healthCenter->name,
+            'municipality_name' => $house->street->community->healthCenter->municipality->name,
+            'state_name' => $house->street->community->healthCenter->municipality->state->name
+        ]);
     }
 
-    public function getHealthCentersByMunicipality($municipalityId)
-    {
-        $healthCenters = HealthCenter::where('municipality_id', $municipalityId)->get();
-        return response()->json($healthCenters);
-    }
-
-    public function getCommunitiesByHealthCenter($healthCenterId)
-    {
-        $communities = Community::where('health_center_id', $healthCenterId)->get();
-        return response()->json($communities);
-    }
-
-    public function getStreetsByCommunity($communityId)
-    {
-        $streets = Street::where('community_id', $communityId)->get();
-        return response()->json($streets);
-    }
-
-    public function getHousesByStreet($streetId)
-    {
-        $houses = House::where('street_id', $streetId)->get();
-        return response()->json($houses);
-    }
-
-    public function getHouseDetails($houseId)
-    {
-        $house = House::with(['street.community.healthCenter.municipality.state'])->find($houseId);
-        
-        if ($house) {
-            return response()->json([
-                'full_address' => $house->full_address,
-                'community_name' => $house->street->community->name,
-                'health_center_name' => $house->street->community->healthCenter->name,
-                'municipality_name' => $house->street->community->healthCenter->municipality->name,
-                'state_name' => $house->street->community->healthCenter->municipality->state->name
-            ]);
-        }
-
-        return response()->json(['error' => 'Casa no encontrada'], 404);
-    }
+    return response()->json(['error' => 'Casa no encontrada'], 404);
+}
 }

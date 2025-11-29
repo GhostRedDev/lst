@@ -9,7 +9,20 @@ class Community extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'sector', 'description'];
+    protected $fillable = [
+        'health_center_id', // Asegúrate de incluir este campo
+        'name', 
+        'sector', 
+        'description',
+        'latitude',
+        'longitude'
+    ];
+
+    // 🔥 RELACIÓN FALTANTE - Agrega esto
+    public function healthCenter()
+    {
+        return $this->belongsTo(HealthCenter::class);
+    }
 
     public function streets()
     {

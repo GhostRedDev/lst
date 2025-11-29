@@ -124,76 +124,103 @@ class PatientController extends Controller
         return view('patients.create', compact('states', 'selectedHouse'));
     }
 
-    public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'history_number' => 'required|unique:patients|max:50',
-            'last_names' => 'required|string|max:100',
-            'names' => 'required|string|max:100',
-            'house_id' => 'nullable|exists:houses,id',
-            'dispensary_group' => 'required|in:I,II,III,IV,V,VI',
-            'housing_type' => 'required|in:CASA,APARTAMENTO,RANCHO,QUINTA,OTRO',
-            'risk_factors' => 'nullable|string|max:500',
-            'birth_date' => 'required|date|before:today',
-            'age' => 'required|integer|min:0|max:150',
-            'gender' => 'required|in:M,F',
-            'id_card' => 'required|unique:patients|max:20',
-            'phone' => 'nullable|string|max:15',
-            'next_appointment' => 'required|date|after:today',
-            'diagnosis' => 'nullable|string|max:1000',
-            'education' => 'required|in:ANALFABETA,PRIMARIA,SECUNDARIA,TECNICO,UNIVERSITARIO,POSTGRADO',
-            'occupation' => 'required|string|max:100',
-            'profession' => 'nullable|string|max:100',
-            'disability' => 'required|in:SI,NO',
-            'classification' => 'required|in:AGUDO,CRONICO,DISCAPACITADO,GESTANTE,NIÑO,ADULTO,ADULTO_MAYOR',
-            'observation' => 'nullable|string|max:1000',
-            'is_annexed' => 'boolean',
-        ], [
-            'history_number.unique' => 'El número de historia ya existe.',
-            'id_card.unique' => 'La cédula de identidad ya está registrada.',
-            'birth_date.before' => 'La fecha de nacimiento debe ser anterior a hoy.',
-            'next_appointment.after' => 'La próxima consulta debe ser posterior a hoy.',
-            'house_id.exists' => 'La casa seleccionada no existe.',
-        ]);
+   public function store(Request $request)
+{
+    // Validación corregida
+    $validator = Validator::make($request->all(), [
+        'history_number' => 'required|unique:patients|max:50',
+        'code' => 'nullable|string|max:50',
+        'id_card' => 'required|unique:patients|max:20',
+        'last_names' => 'required|string|max:100',
+        'names' => 'required|string|max:100',
+        'house_id' => 'required|exists:houses,id',
+        'birth_date' => 'required|date|before:today',
+        'age' => 'required|integer|min:0|max:150',
+        'gender' => 'required|in:M,F',
+        'phone' => 'nullable|string|max:15',
+        'housing_type' => 'required|in:CASA,APARTAMENTO,RANCHO,QUINTA,OTRO',
+        'dispensary_group' => 'required|in:I,II,III,IV,V,VI',
+        'risk_factors' => 'nullable|array',
+        'disability' => 'required|in:SI,NO',
+        'education' => 'required|in:ANALFABETA,PRIMARIA,SECUNDARIA,TECNICO,UNIVERSITARIO,POSTGRADO',
+        'occupation' => 'required|string|max:100',
+        'profession' => 'nullable|string|max:100',
+        'next_appointment' => 'required|date|after:today',
+        'classification' => 'required|in:AGUDO,CRONICO,DISCAPACITADO,GESTANTE,NIÑO,ADULTO,ADULTO_MAYOR',
+        'diagnosis' => 'nullable|string|max:1000',
+        'observation' => 'nullable|string|max:1000',
+        'is_annexed' => 'boolean',
+        'state_id' => 'required|exists:states,id',
+        'municipality_id' => 'required|exists:municipalities,id',
+        'health_center_id' => 'required|exists:health_centers,id',
+        'community_id' => 'required|exists:communities,id',
+        'street_id' => 'required|exists:streets,id',
+    ], [
+        'history_number.unique' => 'El número de historia ya existe.',
+        'id_card.unique' => 'La cédula de identidad ya está registrada.',
+        'birth_date.before' => 'La fecha de nacimiento debe ser anterior a hoy.',
+        'next_appointment.after' => 'La próxima consulta debe ser posterior a hoy.',
+        'house_id.exists' => 'La casa seleccionada no existe.',
+    ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $patientData = $request->all();
-            
-            // Calcular edad automáticamente si no se proporciona
-            if (empty($patientData['age']) && !empty($patientData['birth_date'])) {
-                $birthDate = new \DateTime($patientData['birth_date']);
-                $today = new \DateTime();
-                $patientData['age'] = $today->diff($birthDate)->y;
-            }
-
-            // Si se seleccionó una casa, usar la dirección automática
-            if ($request->house_id) {
-                $house = House::with(['street.community'])->find($request->house_id);
-                if ($house) {
-                    $patientData['address'] = $house->full_address;
-                }
-            }
-
-            Patient::create($patientData);
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Paciente registrado exitosamente.'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al registrar el paciente: ' . $e->getMessage()
-            ], 500);
-        }
+    if ($validator->fails()) {
+        return redirect()->back()
+            ->withErrors($validator)
+            ->withInput()
+            ->with('error', 'Por favor corrige los errores en el formulario.');
     }
+
+    try {
+        $patientData = $request->all();
+        
+        // Calcular edad automáticamente
+        if (!empty($patientData['birth_date'])) {
+            $birthDate = new \DateTime($patientData['birth_date']);
+            $today = new \DateTime();
+            $patientData['age'] = $today->diff($birthDate)->y;
+        }
+
+        // Procesar risk_factors como JSON
+        if ($request->has('risk_factors') && is_array($request->risk_factors)) {
+            $patientData['risk_factors'] = json_encode($request->risk_factors);
+        } else {
+            $patientData['risk_factors'] = null;
+        }
+
+        // Generar dirección automática
+        if ($request->house_id) {
+            $house = House::with(['street.community.healthCenter.municipality.state'])->find($request->house_id);
+            if ($house) {
+                $patientData['address'] = "Casa {$house->house_number}, {$house->street->name}, " .
+                                         "{$house->street->community->name}, " .
+                                         "{$house->street->community->healthCenter->municipality->name}, " .
+                                         "{$house->street->community->healthCenter->municipality->state->name}";
+            }
+        }
+
+        // Asegurar que is_annexed sea booleano
+        $patientData['is_annexed'] = $request->has('is_annexed') ? true : false;
+
+        // Limpiar campos opcionales
+        $patientData['code'] = $patientData['code'] ?? null;
+        $patientData['phone'] = $patientData['phone'] ?? null;
+        $patientData['profession'] = $patientData['profession'] ?? null;
+        $patientData['diagnosis'] = $patientData['diagnosis'] ?? null;
+        $patientData['observation'] = $patientData['observation'] ?? null;
+
+        // Crear el paciente
+        Patient::create($patientData);
+        
+        return redirect()->route('patients.index')
+            ->with('success', 'Paciente registrado exitosamente.');
+            
+    } catch (\Exception $e) {
+        \Log::error('Error al crear paciente: ' . $e->getMessage());
+        return redirect()->back()
+            ->with('error', 'Error al registrar el paciente: ' . $e->getMessage())
+            ->withInput();
+    }
+}
 
     public function show(Patient $patient)
     {
@@ -201,8 +228,7 @@ class PatientController extends Controller
             'house.street.community.healthCenter.municipality.state',
             'pregnancies',
             'childHealths',
-            'homeVisits',
-            'vaccinations'
+            'homeVisits'
         ]);
         
         return view('patients.show', compact('patient'));
@@ -213,22 +239,20 @@ class PatientController extends Controller
         $patient->load(['house.street.community.healthCenter.municipality.state']);
         $states = State::all();
         
-        return response()->json([
-            'patient' => $patient,
-            'states' => $states
-        ]);
+        return view('patients.edit', compact('patient', 'states'));
     }
 
     public function update(Request $request, Patient $patient)
     {
         $validator = Validator::make($request->all(), [
             'history_number' => 'required|unique:patients,history_number,' . $patient->id . '|max:50',
+            'code' => 'nullable|string|max:50',
             'last_names' => 'required|string|max:100',
             'names' => 'required|string|max:100',
-            'house_id' => 'nullable|exists:houses,id',
+            'house_id' => 'required|exists:houses,id',
             'dispensary_group' => 'required|in:I,II,III,IV,V,VI',
             'housing_type' => 'required|in:CASA,APARTAMENTO,RANCHO,QUINTA,OTRO',
-            'risk_factors' => 'nullable|string|max:500',
+            'risk_factors' => 'nullable|array',
             'birth_date' => 'required|date|before:today',
             'age' => 'required|integer|min:0|max:150',
             'gender' => 'required|in:M,F',
@@ -243,13 +267,18 @@ class PatientController extends Controller
             'classification' => 'required|in:AGUDO,CRONICO,DISCAPACITADO,GESTANTE,NIÑO,ADULTO,ADULTO_MAYOR',
             'observation' => 'nullable|string|max:1000',
             'is_annexed' => 'boolean',
+            'state_id' => 'required|exists:states,id',
+            'municipality_id' => 'required|exists:municipalities,id',
+            'health_center_id' => 'required|exists:health_centers,id',
+            'community_id' => 'required|exists:communities,id',
+            'street_id' => 'required|exists:streets,id',
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Por favor corrige los errores en el formulario.');
         }
 
         try {
@@ -262,25 +291,34 @@ class PatientController extends Controller
                 $patientData['age'] = $today->diff($birthDate)->y;
             }
 
+            // Procesar risk_factors
+            if ($request->has('risk_factors') && is_array($request->risk_factors)) {
+                $patientData['risk_factors'] = json_encode($request->risk_factors);
+            }
+
             // Actualizar dirección si cambió la casa
             if ($request->house_id && $request->house_id != $patient->house_id) {
-                $house = House::with(['street.community'])->find($request->house_id);
+                $house = House::with(['street.community.healthCenter.municipality.state'])->find($request->house_id);
                 if ($house) {
-                    $patientData['address'] = $house->full_address;
+                    $patientData['address'] = "Casa {$house->house_number}, {$house->street->name}, " .
+                                             "{$house->street->community->name}, " .
+                                             "{$house->street->community->healthCenter->municipality->name}, " .
+                                             "{$house->street->community->healthCenter->municipality->state->name}";
                 }
             }
 
+            $patientData['is_annexed'] = $request->has('is_annexed') ? true : false;
+
             $patient->update($patientData);
             
-            return response()->json([
-                'success' => true,
-                'message' => 'Paciente actualizado exitosamente.'
-            ]);
+            return redirect()->route('patients.index')
+                ->with('success', 'Paciente actualizado exitosamente.');
+                
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al actualizar el paciente: ' . $e->getMessage()
-            ], 500);
+            \Log::error('Error al actualizar paciente: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Error al actualizar el paciente: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
@@ -291,23 +329,19 @@ class PatientController extends Controller
             if ($patient->pregnancies()->count() > 0 || 
                 $patient->childHealths()->count() > 0 ||
                 $patient->homeVisits()->count() > 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se puede eliminar el paciente porque tiene registros relacionados.'
-                ], 422);
+                return redirect()->route('patients.index')
+                    ->with('error', 'No se puede eliminar el paciente porque tiene registros relacionados.');
             }
 
             $patient->delete();
             
-            return response()->json([
-                'success' => true,
-                'message' => 'Paciente eliminado exitosamente.'
-            ]);
+            return redirect()->route('patients.index')
+                ->with('success', 'Paciente eliminado exitosamente.');
+                
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al eliminar el paciente: ' . $e->getMessage()
-            ], 500);
+            \Log::error('Error al eliminar paciente: ' . $e->getMessage());
+            return redirect()->route('patients.index')
+                ->with('error', 'Error al eliminar el paciente: ' . $e->getMessage());
         }
     }
 
@@ -325,26 +359,35 @@ class PatientController extends Controller
                   ->orWhere('id_card', 'LIKE', "%{$search}%");
             });
         }
-
-        // Aplicar otros filtros...
         
         $patients = $query->get();
 
         return Excel::download(new PatientsExport($patients), 'pacientes_' . date('Y-m-d_His') . '.xlsx');
     }
 
-    // Métodos AJAX mejorados
-    public function getLocationData($houseId)
+    // Métodos AJAX para el formulario
+    public function getStreets($communityId)
+    {
+        $streets = Street::where('community_id', $communityId)->get();
+        return response()->json($streets);
+    }
+
+    public function getHouses($streetId)
+    {
+        $houses = House::where('street_id', $streetId)->get();
+        return response()->json($houses);
+    }
+
+    public function getHouseAddress($houseId)
     {
         $house = House::with(['street.community.healthCenter.municipality.state'])->find($houseId);
         
         if ($house) {
             return response()->json([
-                'address' => $house->full_address,
-                'community' => $house->street->community->name,
-                'health_center' => $house->street->community->healthCenter->name,
-                'municipality' => $house->street->community->healthCenter->municipality->name,
-                'state' => $house->street->community->healthCenter->municipality->state->name
+                'address' => "Casa {$house->house_number}, {$house->street->name}, " .
+                           "{$house->street->community->name}, " .
+                           "{$house->street->community->healthCenter->municipality->name}, " .
+                           "{$house->street->community->healthCenter->municipality->state->name}"
             ]);
         }
 

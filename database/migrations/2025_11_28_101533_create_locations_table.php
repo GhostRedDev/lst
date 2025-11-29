@@ -37,16 +37,16 @@ return new class extends Migration
         });
 
         // Comunidades
-        Schema::create('communities', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('health_center_id')->constrained();
-            $table->string('name');
-            $table->string('sector')->nullable();
-            $table->text('description')->nullable();
-            $table->decimal('latitude', 10, 8)->nullable();
-            $table->decimal('longitude', 11, 8)->nullable();
-            $table->timestamps();
-        });
+       Schema::create('communities', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('health_center_id')->constrained(); // Esto hace que sea NOT NULL por defecto
+    $table->string('name');
+    $table->string('sector')->nullable();
+    $table->text('description')->nullable();
+    $table->decimal('latitude', 10, 8)->nullable();
+    $table->decimal('longitude', 11, 8)->nullable();
+    $table->timestamps();
+});
 
         // Calles
         Schema::create('streets', function (Blueprint $table) {

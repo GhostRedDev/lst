@@ -18,10 +18,12 @@
                     </p>
                 </div>
                 <div class="btn-group">
-                    <a href="{{ route('streets.create', $community) }}" class="btn btn-primary">
+                    <!-- RUTA CORREGIDA -->
+                    <a href="{{ route('locations.streets.create.with-community', $community) }}" class="btn btn-primary">
                         <i class="fas fa-road"></i> Nueva Calle
                     </a>
-                    <a href="{{ route('communities.index') }}" class="btn btn-secondary">
+                    <!-- RUTA CORREGIDA -->
+                    <a href="{{ route('locations.communities.index') }}" class="btn btn-secondary">
                         <i class="fas fa-arrow-left"></i> Volver
                     </a>
                 </div>
@@ -34,7 +36,7 @@
         <div class="col-md-3">
             <div class="card bg-primary text-white">
                 <div class="card-body text-center">
-                    <h3 class="mb-0">{{ $community->streets->count() }}</h3>
+                    <h3 class="mb-0">{{ $community->streets_count ?? $community->streets->count() }}</h3>
                     <p class="mb-0">Calles</p>
                 </div>
             </div>
@@ -42,7 +44,7 @@
         <div class="col-md-3">
             <div class="card bg-success text-white">
                 <div class="card-body text-center">
-                    <h3 class="mb-0">{{ $community->houses->count() }}</h3>
+                    <h3 class="mb-0">{{ $community->houses_count ?? $community->houses->count() }}</h3>
                     <p class="mb-0">Casas</p>
                 </div>
             </div>
@@ -50,7 +52,7 @@
         <div class="col-md-3">
             <div class="card bg-info text-white">
                 <div class="card-body text-center">
-                    <h3 class="mb-0">{{ $community->patients_count }}</h3>
+                    <h3 class="mb-0">{{ $community->patients_count ?? 0 }}</h3>
                     <p class="mb-0">Pacientes</p>
                 </div>
             </div>
@@ -75,10 +77,12 @@
                         <i class="fas fa-road"></i> {{ $street->name }}
                     </h5>
                     <div class="btn-group">
-                        <a href="{{ route('streets.show', $street) }}" class="btn btn-sm btn-outline-primary">
+                        <!-- RUTA CORREGIDA -->
+                        <a href="{{ route('locations.streets.show', $street) }}" class="btn btn-sm btn-outline-primary">
                             <i class="fas fa-eye"></i>
                         </a>
-                        <a href="{{ route('houses.bulk-create', $street) }}" class="btn btn-sm btn-success">
+                        <!-- RUTA CORREGIDA -->
+                        <a href="{{ route('locations.houses.bulk-create', $street) }}" class="btn btn-sm btn-success">
                             <i class="fas fa-layer-group"></i>
                         </a>
                     </div>
@@ -88,11 +92,11 @@
                     <div class="row text-center mb-3">
                         <div class="col-6">
                             <small class="text-muted">Casas</small>
-                            <h6 class="mb-0">{{ $street->houses->count() }}</h6>
+                            <h6 class="mb-0">{{ $street->houses_count ?? $street->houses->count() }}</h6>
                         </div>
                         <div class="col-6">
                             <small class="text-muted">Pacientes</small>
-                            <h6 class="mb-0">{{ $street->patients->count() }}</h6>
+                            <h6 class="mb-0">{{ $street->patients_count ?? $street->patients->count() }}</h6>
                         </div>
                     </div>
 
@@ -123,7 +127,8 @@
 
                     <!-- Acciones -->
                     <div class="d-grid gap-2">
-                        <a href="{{ route('houses.create', $street) }}" class="btn btn-sm btn-outline-primary">
+                        <!-- RUTA CORREGIDA -->
+                        <a href="{{ route('locations.houses.create.with-street', $street) }}" class="btn btn-sm btn-outline-primary">
                             <i class="fas fa-plus"></i> Agregar Casa
                         </a>
                     </div>
@@ -137,7 +142,8 @@
                     <i class="fas fa-road fa-3x text-muted mb-3"></i>
                     <h4 class="text-muted">No hay calles registradas</h4>
                     <p class="text-muted">Comienza agregando la primera calle a esta comunidad.</p>
-                    <a href="{{ route('streets.create', $community) }}" class="btn btn-primary">
+                    <!-- RUTA CORREGIDA -->
+                    <a href="{{ route('locations.streets.create.with-community', $community) }}" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Crear Primera Calle
                     </a>
                 </div>

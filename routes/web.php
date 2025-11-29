@@ -50,74 +50,78 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // ==================== SISTEMA DE UBICACIONES (UNIFICADO) ====================
-    Route::prefix('locations')->group(function () {
+    Route::prefix('locations')->name('locations.')->group(function () {
         // Dashboard de ubicaciones
-        Route::get('/', [LocationController::class, 'dashboard'])->name('locations.dashboard');
+        Route::get('/', [LocationController::class, 'dashboard'])->name('dashboard');
         
         // ==================== ESTADOS ====================
-        Route::prefix('states')->group(function () {
-            Route::get('/', [LocationController::class, 'statesIndex'])->name('locations.states.index');
-            Route::get('/create', [LocationController::class, 'statesCreate'])->name('locations.states.create');
-            Route::post('/', [LocationController::class, 'statesStore'])->name('locations.states.store');
-            Route::get('/{state}/edit', [LocationController::class, 'statesEdit'])->name('locations.states.edit');
-            Route::put('/{state}', [LocationController::class, 'statesUpdate'])->name('locations.states.update');
-            Route::delete('/{state}', [LocationController::class, 'statesDestroy'])->name('locations.states.destroy');
+        Route::prefix('states')->name('states.')->group(function () {
+            Route::get('/', [LocationController::class, 'statesIndex'])->name('index');
+            Route::get('/create', [LocationController::class, 'statesCreate'])->name('create');
+            Route::post('/', [LocationController::class, 'statesStore'])->name('store');
+            Route::get('/{state}/edit', [LocationController::class, 'statesEdit'])->name('edit');
+            Route::put('/{state}', [LocationController::class, 'statesUpdate'])->name('update');
+            Route::delete('/{state}', [LocationController::class, 'statesDestroy'])->name('destroy');
         });
         
         // ==================== MUNICIPIOS ====================
-        Route::prefix('municipalities')->group(function () {
-            Route::get('/', [LocationController::class, 'municipalitiesIndex'])->name('locations.municipalities.index');
-            Route::get('/create', [LocationController::class, 'municipalitiesCreate'])->name('locations.municipalities.create');
-            Route::post('/', [LocationController::class, 'municipalitiesStore'])->name('locations.municipalities.store');
-            Route::get('/{municipality}/edit', [LocationController::class, 'municipalitiesEdit'])->name('locations.municipalities.edit');
-            Route::put('/{municipality}', [LocationController::class, 'municipalitiesUpdate'])->name('locations.municipalities.update');
-            Route::delete('/{municipality}', [LocationController::class, 'municipalitiesDestroy'])->name('locations.municipalities.destroy');
+        Route::prefix('municipalities')->name('municipalities.')->group(function () {
+            Route::get('/', [LocationController::class, 'municipalitiesIndex'])->name('index');
+            Route::get('/create', [LocationController::class, 'municipalitiesCreate'])->name('create');
+            Route::post('/', [LocationController::class, 'municipalitiesStore'])->name('store');
+            Route::get('/{municipality}/edit', [LocationController::class, 'municipalitiesEdit'])->name('edit');
+            Route::put('/{municipality}', [LocationController::class, 'municipalitiesUpdate'])->name('update');
+            Route::delete('/{municipality}', [LocationController::class, 'municipalitiesDestroy'])->name('destroy');
         });
         
         // ==================== CENTROS DE SALUD ====================
-        Route::prefix('health-centers')->group(function () {
-            Route::get('/', [LocationController::class, 'healthCentersIndex'])->name('locations.health-centers.index');
-            Route::get('/create', [LocationController::class, 'healthCentersCreate'])->name('locations.health-centers.create');
-            Route::post('/', [LocationController::class, 'healthCentersStore'])->name('locations.health-centers.store');
-            Route::get('/{healthCenter}', [LocationController::class, 'healthCentersShow'])->name('locations.health-centers.show');
-            Route::get('/{healthCenter}/edit', [LocationController::class, 'healthCentersEdit'])->name('locations.health-centers.edit');
-            Route::put('/{healthCenter}', [LocationController::class, 'healthCentersUpdate'])->name('locations.health-centers.update');
-            Route::delete('/{healthCenter}', [LocationController::class, 'healthCentersDestroy'])->name('locations.health-centers.destroy');
+        Route::prefix('health-centers')->name('health-centers.')->group(function () {
+            Route::get('/', [LocationController::class, 'healthCentersIndex'])->name('index');
+            Route::get('/create', [LocationController::class, 'healthCentersCreate'])->name('create');
+            Route::post('/', [LocationController::class, 'healthCentersStore'])->name('store');
+            Route::get('/{healthCenter}', [LocationController::class, 'healthCentersShow'])->name('show');
+            Route::get('/{healthCenter}/edit', [LocationController::class, 'healthCentersEdit'])->name('edit');
+            Route::put('/{healthCenter}', [LocationController::class, 'healthCentersUpdate'])->name('update');
+            Route::delete('/{healthCenter}', [LocationController::class, 'healthCentersDestroy'])->name('destroy');
         });
         
         // ==================== COMUNIDADES ====================
-        Route::prefix('communities')->group(function () {
-            Route::get('/', [LocationController::class, 'communitiesIndex'])->name('locations.communities.index');
-            Route::get('/create', [LocationController::class, 'communitiesCreate'])->name('locations.communities.create');
-            Route::post('/', [LocationController::class, 'communitiesStore'])->name('locations.communities.store');
-            Route::get('/{community}', [LocationController::class, 'communitiesShow'])->name('locations.communities.show');
-            Route::get('/{community}/edit', [LocationController::class, 'communitiesEdit'])->name('locations.communities.edit');
-            Route::put('/{community}', [LocationController::class, 'communitiesUpdate'])->name('locations.communities.update');
-            Route::delete('/{community}', [LocationController::class, 'communitiesDestroy'])->name('locations.communities.destroy');
+        Route::prefix('communities')->name('communities.')->group(function () {
+            Route::get('/', [LocationController::class, 'communitiesIndex'])->name('index');
+            Route::get('/create', [LocationController::class, 'communitiesCreate'])->name('create');
+            Route::post('/', [LocationController::class, 'communitiesStore'])->name('store');
+            Route::get('/{community}', [LocationController::class, 'communitiesShow'])->name('show');
+            Route::get('/{community}/edit', [LocationController::class, 'communitiesEdit'])->name('edit');
+            Route::put('/{community}', [LocationController::class, 'communitiesUpdate'])->name('update');
+            Route::delete('/{community}', [LocationController::class, 'communitiesDestroy'])->name('destroy');
         });
         
         // ==================== CALLES ====================
-        Route::prefix('streets')->group(function () {
-            Route::get('/', [LocationController::class, 'streetsIndex'])->name('locations.streets.index');
-            Route::get('/create', [LocationController::class, 'streetsCreate'])->name('locations.streets.create');
-            Route::post('/', [LocationController::class, 'streetsStore'])->name('locations.streets.store');
-            Route::get('/{street}', [LocationController::class, 'streetsShow'])->name('locations.streets.show');
-            Route::get('/{street}/edit', [LocationController::class, 'streetsEdit'])->name('locations.streets.edit');
-            Route::put('/{street}', [LocationController::class, 'streetsUpdate'])->name('locations.streets.update');
-            Route::delete('/{street}', [LocationController::class, 'streetsDestroy'])->name('locations.streets.destroy');
+        Route::prefix('streets')->name('streets.')->group(function () {
+            Route::get('/', [LocationController::class, 'streetsIndex'])->name('index');
+            Route::get('/create', [LocationController::class, 'streetsCreate'])->name('create');
+            // 🔥 RUTA ESPECÍFICA PARA CREAR CALLE DESDE UNA COMUNIDAD
+            Route::get('/create/{community}', [LocationController::class, 'streetsCreate'])->name('create.with-community');
+            Route::post('/', [LocationController::class, 'streetsStore'])->name('store');
+            Route::get('/{street}', [LocationController::class, 'streetsShow'])->name('show');
+            Route::get('/{street}/edit', [LocationController::class, 'streetsEdit'])->name('edit');
+            Route::put('/{street}', [LocationController::class, 'streetsUpdate'])->name('update');
+            Route::delete('/{street}', [LocationController::class, 'streetsDestroy'])->name('destroy');
         });
         
         // ==================== CASAS ====================
-        Route::prefix('houses')->group(function () {
-            Route::get('/', [LocationController::class, 'housesIndex'])->name('locations.houses.index');
-            Route::get('/create', [LocationController::class, 'housesCreate'])->name('locations.houses.create');
-            Route::post('/', [LocationController::class, 'housesStore'])->name('locations.houses.store');
-            Route::get('/{house}', [LocationController::class, 'housesShow'])->name('locations.houses.show');
-            Route::get('/{house}/edit', [LocationController::class, 'housesEdit'])->name('locations.houses.edit');
-            Route::put('/{house}', [LocationController::class, 'housesUpdate'])->name('locations.houses.update');
-            Route::delete('/{house}', [LocationController::class, 'housesDestroy'])->name('locations.houses.destroy');
-            Route::get('/bulk-create/{street}', [LocationController::class, 'housesBulkCreate'])->name('locations.houses.bulk-create');
-            Route::post('/bulk-store/{street}', [LocationController::class, 'housesBulkStore'])->name('locations.houses.bulk-store');
+        Route::prefix('houses')->name('houses.')->group(function () {
+            Route::get('/', [LocationController::class, 'housesIndex'])->name('index');
+            Route::get('/create', [LocationController::class, 'housesCreate'])->name('create');
+            // 🔥 RUTA ESPECÍFICA PARA CREAR CASA DESDE UNA CALLE
+            Route::get('/create/{street}', [LocationController::class, 'housesCreate'])->name('create.with-street');
+            Route::post('/', [LocationController::class, 'housesStore'])->name('store');
+            Route::get('/{house}', [LocationController::class, 'housesShow'])->name('show');
+            Route::get('/{house}/edit', [LocationController::class, 'housesEdit'])->name('edit');
+            Route::put('/{house}', [LocationController::class, 'housesUpdate'])->name('update');
+            Route::delete('/{house}', [LocationController::class, 'housesDestroy'])->name('destroy');
+            Route::get('/bulk-create/{street}', [LocationController::class, 'housesBulkCreate'])->name('bulk-create');
+            Route::post('/bulk-store/{street}', [LocationController::class, 'housesBulkStore'])->name('bulk-store');
         });
     });
 
@@ -170,4 +174,24 @@ Route::middleware(['auth'])->group(function () {
 // ==================== RUTAS DE FALLBACK ====================
 Route::fallback(function () {
     return response()->view('errors.404', [], 404);
+});// En tu routes/web.php - ya deberían estar estas rutas:
+Route::prefix('houses')->name('houses.')->group(function () {
+    Route::get('/', [LocationController::class, 'housesIndex'])->name('index');
+    Route::get('/create', [LocationController::class, 'housesCreate'])->name('create');
+    Route::get('/create/{street}', [LocationController::class, 'housesCreate'])->name('create.with-street');
+    Route::post('/', [LocationController::class, 'housesStore'])->name('store');
+    Route::get('/{house}', [LocationController::class, 'housesShow'])->name('show');
+    Route::get('/{house}/edit', [LocationController::class, 'housesEdit'])->name('edit');
+    Route::put('/{house}', [LocationController::class, 'housesUpdate'])->name('update');
+    Route::delete('/{house}', [LocationController::class, 'housesDestroy'])->name('destroy');
+    Route::get('/bulk-create/{street}', [LocationController::class, 'housesBulkCreate'])->name('bulk-create');
+    Route::post('/bulk-store/{street}', [LocationController::class, 'housesBulkStore'])->name('bulk-store');
+});// Rutas AJAX para ubicaciones
+Route::prefix('ajax')->group(function () {
+    Route::get('/municipalities/{stateId}', [LocationController::class, 'getMunicipalitiesByState'])->name('ajax.municipalities');
+    Route::get('/health-centers/{municipalityId}', [LocationController::class, 'getHealthCentersByMunicipality'])->name('ajax.health-centers');
+    Route::get('/communities/{healthCenterId}', [LocationController::class, 'getCommunitiesByHealthCenter'])->name('ajax.communities');
+    Route::get('/streets/{communityId}', [LocationController::class, 'getStreetsByCommunity'])->name('ajax.streets');
+    Route::get('/houses/{streetId}', [LocationController::class, 'getHousesByStreet'])->name('ajax.houses');
+    Route::get('/house-details/{houseId}', [LocationController::class, 'getHouseDetails'])->name('ajax.house-details');
 });

@@ -9,7 +9,8 @@ class House extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['street_id', 'house_number', 'description', 'total_residents'];
+    // 🔥 REMOVER total_residents de fillable
+    protected $fillable = ['street_id', 'house_number', 'description'];
 
     public function street()
     {
@@ -47,13 +48,14 @@ class House extends Model
         return $this->patients()->count();
     }
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::saving(function ($house) {
-            // Actualizar el contador de residentes
-            $house->total_residents = $house->patients()->count();
-        });
-    }
+    // 🔥 ELIMINAR el método boot() que usa total_residents
+    // protected static function boot()
+    // {
+    //     parent::boot();
+    //
+    //     static::saving(function ($house) {
+    //         // Actualizar el contador de residentes
+    //         $house->total_residents = $house->patients()->count();
+    //     });
+    // }
 }

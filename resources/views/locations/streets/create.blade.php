@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="container-fluid">
+    <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
@@ -15,7 +16,8 @@
                         Comunidad: {{ $community->name }}
                     </p>
                 </div>
-                <a href="{{ route('communities.show', $community) }}" class="btn btn-secondary">
+                <!-- 🔥 CORRECCIÓN: Cambia communities.show por locations.communities.show -->
+                <a href="{{ route('locations.communities.show', $community) }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Volver
                 </a>
             </div>
@@ -29,9 +31,12 @@
                     <h5 class="mb-0">Información de la Calle</h5>
                 </div>
                 <div class="card-body-sprl">
-                    <form action="{{ route('streets.store', $community) }}" method="POST">
+                    <form action="{{ route('locations.streets.store') }}" method="POST">
                         @csrf
                         
+                        <!-- Campo oculto para la comunidad -->
+                        <input type="hidden" name="community_id" value="{{ $community->id }}">
+
                         <div class="mb-3">
                             <label for="name" class="form-label">Nombre de la Calle *</label>
                             <input type="text" class="form-control @error('name') is-invalid @enderror" 
@@ -52,14 +57,8 @@
                             @enderror
                         </div>
 
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle"></i>
-                            <strong>Información:</strong> Esta calle será creada en la comunidad 
-                            <strong>{{ $community->name }}</strong>.
-                        </div>
-
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{{ route('communities.show', $community) }}" class="btn btn-secondary me-md-2">
+                            <a href="{{ route('locations.communities.show', $community) }}" class="btn btn-secondary me-md-2">
                                 <i class="fas fa-times"></i> Cancelar
                             </a>
                             <button type="submit" class="btn btn-primary">
